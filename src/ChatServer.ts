@@ -1,20 +1,19 @@
 import { Server } from 'http'
 import socketIo from 'socket.io'
 
-import { Message, UserList } from './models'
+import { Message, User } from './models'
 
 export class ChatServer {
   public static readonly PORT: number = 8080
   private server: Server
   private io: socketIo.Server
   private port: string | number
-  private userList: UserList
+  private users: User[] = []
 
-  constructor(httpServer: Server, userList: UserList) {
+  constructor(httpServer: Server) {
     this.server = httpServer
     this.port = process.env.PORT || ChatServer.PORT
     this.io = socketIo(this.server)
-    this.userList = userList
   }
 
   public listen(): void {
@@ -27,7 +26,7 @@ export class ChatServer {
 
       socket.on('newUser', (nickname: string) => {
         try {
-          this.userList.addUser(nickname, socket.id)
+          this.users.push(new User(nickname, socket.id, this.randomHex()))
           socket.emit('nickname', nickname)
           socket.broadcast.emit('userJoined', nickname)
         } catch (err) {
@@ -49,9 +48,13 @@ export class ChatServer {
         socket.broadcast.emit('userStopTyping', nickname)
       })
 
-      socket.on('disconnect', () => {
-        this.userList = this.userList.filter(user => !user.isUser(user))
+      socket.on('disconnect', (id: string) => {
+        this.users = this.users.filter((user: User) => user.id !== id)
       })
     })
+  }
+
+  private randomHex () {
+    return '#' + (Math.random().toString(16) + '000000').slice(2, 8)
   }
 }

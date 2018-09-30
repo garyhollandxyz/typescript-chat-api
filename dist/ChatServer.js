@@ -4,12 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const socket_io_1 = __importDefault(require("socket.io"));
+const models_1 = require("./models");
 class ChatServer {
-    constructor(httpServer, userList) {
+    constructor(httpServer) {
+        this.users = [];
         this.server = httpServer;
         this.port = process.env.PORT || ChatServer.PORT;
         this.io = socket_io_1.default(this.server);
-        this.userList = userList;
     }
     listen() {
         this.server.listen(this.port, () => {
@@ -19,7 +20,7 @@ class ChatServer {
             console.log(`Connected client on port ${this.port}.`);
             socket.on('newUser', (nickname) => {
                 try {
-                    this.userList.addUser(nickname, socket.id);
+                    this.users.push(new models_1.User(nickname, socket.id, this.randomHex()));
                     socket.emit('nickname', nickname);
                     socket.broadcast.emit('userJoined', nickname);
                 }
@@ -38,10 +39,13 @@ class ChatServer {
             socket.on('stopTyping', (nickname) => {
                 socket.broadcast.emit('userStopTyping', nickname);
             });
-            socket.on('disconnect', () => {
-                this.userList = this.userList.filter(user => !user.isUser(user));
+            socket.on('disconnect', (id) => {
+                this.users = this.users.filter((user) => user.id !== id);
             });
         });
+    }
+    randomHex() {
+        return '#' + (Math.random().toString(16) + '000000').slice(2, 8);
     }
 }
 ChatServer.PORT = 8080;
