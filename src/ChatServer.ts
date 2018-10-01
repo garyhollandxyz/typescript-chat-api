@@ -55,11 +55,11 @@ export class ChatServer {
     })
   }
 
-  private randomHex() {
-    return '#' + (Math.random().toString(16) + '000000').slice(2, 8)
+  private randomHex(): string {
+    return `#${(Math.random().toString(16) + '000000').slice(2, 8)}`
   }
 
-  private validateNickname(nickname: string) {
+  private validateNickname(nickname: string): void {
     if (this.users.some(user => user.nickname === nickname))
       throw new Error('That nickname is taken!')
   }
